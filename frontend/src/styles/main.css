@@ -1,0 +1,56 @@
+:root {
+  --choco: #56372F; --black: #1A110F; --cream: #F8F4EC; --gold: #C9A24D; --sky: #A9CCE3;
+  --ink: #2B1D19; --muted: #766A63; --line: #E4D9C6; --card: #FFFFFF;
+  --ok: #2E7D4F; --warn: #B7791F; --bad: #B3402F;
+  --serif: 'Playfair Display', Georgia, serif; --sans: Inter, system-ui, sans-serif;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: 72px; }
+body { margin: 0; font: 16px/1.55 var(--sans); color: var(--ink); background: var(--cream); -webkit-tap-highlight-color: transparent; }
+h1, h2, h3 { font-family: var(--serif); line-height: 1.15; margin: 0 0 .5em; color: var(--choco); }
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; padding: 0 1.25rem;
+  border: 1.5px solid var(--choco); border-radius: 999px; background: var(--choco); color: #fff; font: 600 .95rem var(--sans);
+  text-decoration: none; cursor: pointer; transition: transform .12s, background .12s; }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.gold { background: var(--gold); border-color: var(--gold); color: var(--black); }
+.btn.ghost { background: transparent; color: var(--choco); }
+.btn.light { background: transparent; border-color: rgba(255,255,255,.6); color: #fff; }
+.btn.danger { background: transparent; border-color: var(--bad); color: var(--bad); }
+.btn.sm { min-height: 40px; padding: 0 1rem; font-size: .85rem; }
+.btn.block { width: 100%; }
+
+.field { display: grid; gap: .35rem; margin-bottom: 1rem; }
+.field label { font-weight: 600; font-size: .9rem; }
+.field input, .field select, .field textarea { width: 100%; min-height: 48px; padding: .6rem .85rem; border: 1.5px solid var(--line);
+  border-radius: 12px; background: #fff; font: inherit; color: var(--ink); }
+.field textarea { min-height: 90px; resize: vertical; }
+.field small { color: var(--muted); }
+.row { display: grid; gap: 1rem; } @media (min-width: 640px) { .row.two { grid-template-columns: 1fr 1fr; } }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1rem 1.1rem; }
+.stack { display: grid; gap: .75rem; }
+.muted { color: var(--muted); } .small { font-size: .85rem; }
+.err { background: #FBECE9; color: var(--bad); border-radius: 10px; padding: .65rem .85rem; margin: 0 0 1rem; font-size: .9rem; }
+.okmsg { background: #E8F4EC; color: var(--ok); border-radius: 10px; padding: .65rem .85rem; margin: 0 0 1rem; font-size: .9rem; }
+
+.badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; background: #EFE7D6; color: var(--choco); }
+.badge.EN_ATTENTE, .badge.warn { background: #FBF0D9; color: var(--warn); }
+.badge.CONFIRMEE, .badge.CONFIRME { background: #E1F0E7; color: var(--ok); }
+.badge.TERMINEE { background: #DCE9F3; color: #2C5D82; }
+.badge.ANNULEE, .badge.REFUSE { background: #F6E0DC; color: var(--bad); }
+
+.sheet-back { position: fixed; inset: 0; background: rgba(26,17,15,.55); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow: auto; background: var(--cream); border-radius: 22px 22px 0 0;
+  padding: 1.25rem 1.25rem calc(1.25rem + var(--safe-b)); }
+@media (min-width: 640px) { .sheet-back { align-items: center; } .sheet { border-radius: 22px; } }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+.sheet-head h2 { margin: 0; font-size: 1.35rem; }
+.icon-btn { width: 44px; height: 44px; border: 0; background: transparent; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: inherit; }
+.badge + .badge { margin-left: .25rem; }
