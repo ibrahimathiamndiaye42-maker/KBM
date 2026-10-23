@@ -1,11 +1,13 @@
 import { reactive } from 'vue';
 import { api } from '../api/http.js';
 
-export const site = reactive({ loaded: false, settings: {}, services: [], packs: [], gallery: [], logo: null });
+export const site = reactive({ loaded: false, settings: {}, services: [], packs: [], gallery: [], logo: null, aboutImage: null });
+// Prestation présélectionnée quand on clique sur « Réserver » depuis une carte
+export const booking = reactive({ item: '' });
 
 export async function loadSite() {
   const d = await api('/public/config');
-  Object.assign(site, { settings: d.settings, services: d.services, packs: d.packs, gallery: d.gallery,
+  Object.assign(site, { settings: d.settings, services: d.services, packs: d.packs, gallery: d.gallery, aboutImage: d.about_image,
     logo: d.logo_version ? `/api/public/logo?v=${d.logo_version}` : null, loaded: true });
   const s = d.settings, root = document.documentElement.style;
   root.setProperty('--choco', s.color_choco); root.setProperty('--black', s.color_black);

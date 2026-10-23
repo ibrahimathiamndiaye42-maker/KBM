@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
+import InstallCard from '../../components/InstallCard.vue';
 import ReservationRow from '../../components/ReservationRow.vue';
 import ReservationSheet from '../../components/ReservationSheet.vue';
 import { api } from '../../api/http.js';
@@ -17,6 +18,7 @@ const tiles = (x) => [
 </script>
 <template>
   <h1 style="font-size:1.6rem">Bonjour {{ auth.user?.nom.split(' ')[0] }}</h1>
+  <InstallCard dismissible />
   <p v-if="error" class="err">{{ error }}</p>
   <template v-if="d">
     <div class="tiles">

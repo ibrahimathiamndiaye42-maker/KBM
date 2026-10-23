@@ -8,6 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
+        id: '/',
         name: 'Keer Maam Birabar',
         short_name: 'Keer Maam',
         description: 'Institut de beauté — réservations et gestion',
@@ -32,4 +33,5 @@ export default defineConfig({
     }),
   ],
   server: { proxy: { '/api': 'http://localhost:4000' } },
+  preview: { proxy: { '/api': 'http://localhost:4000' } },
 });

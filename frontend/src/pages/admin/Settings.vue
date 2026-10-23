@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import ImageField from '../../components/ImageField.vue';
 import { api } from '../../api/http.js';
 import { compressImage } from '../../composables/format.js';
 import { loadSite, site } from '../../composables/useConfig.js';
@@ -38,6 +39,10 @@ const addPhoto = (e) => flash(async () => {
   await load(); await loadSite(); e.target.value = '';
 }, 'Photo ajoutée.');
 const delPhoto = (id) => flash(async () => { await api(`/admin/gallery/${id}`, { method: 'DELETE' }); await load(); await loadSite(); }, 'Photo supprimée.');
+const aboutPick = (f) => flash(async () => {
+  await api('/admin/media/about', { method: 'PUT', body: await compressImage(f, 1400) }); await loadSite();
+}, 'Photo de l\'établissement mise à jour.');
+const aboutClear = () => flash(async () => { await api('/admin/media/about', { method: 'DELETE' }); await loadSite(); }, 'Photo retirée.');
 const changePw = () => flash(async () => {
   await api('/auth/change-password', { method: 'POST', body: { ...pw } }); pw.current = ''; pw.next = '';
 }, 'Mot de passe modifié.');
@@ -62,6 +67,12 @@ const changePw = () => flash(async () => {
     <h2 style="font-size:1.2rem">Logo</h2>
     <div class="field"><input type="file" accept="image/*" aria-label="Choisir un logo" @change="logo" /><small>Il apparaît sur le site, l'application et les reçus PDF.</small></div>
     <button v-if="site.logo" class="btn danger sm" @click="removeLogo">Retirer le logo</button>
+  </section>
+
+  <section class="card" style="margin-top:1rem">
+    <h2 style="font-size:1.2rem">Photo de l'établissement</h2>
+    <ImageField label="Affichée à côté du texte « À propos »" :current="site.aboutImage" hint="Une photo de l'institut (façade, salle de soins…)."
+      @pick="aboutPick" @clear="aboutClear" />
   </section>
 
   <section class="card" style="margin-top:1rem">

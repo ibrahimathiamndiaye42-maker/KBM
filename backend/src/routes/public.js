@@ -5,6 +5,7 @@ import { query, withTransaction } from '../db/pool.js';
 import { AppError } from '../middleware/errors.js';
 import { SETTING_DEFS, getSettings } from '../services/settings.js';
 import { buildSlots, resolveItem, upsertClient } from '../services/bookings.js';
+import { MEDIA_KEY, mediaUrls, withImages } from '../services/media.js';
 import { dateStr, name, optionalEmail, phone, timeStr, todayStr } from '../services/validators.js';
 
 const router = Router();
@@ -17,15 +18,20 @@ const bookingLimiter = rateLimit({
 router.get('/config', async (_req, res) => {
   const settings = await getSettings();
   const pub = Object.fromEntries(Object.entries(settings).filter(([k]) => SETTING_DEFS[k]?.public));
-  const [services, packs, gallery, logo] = await Promise.all([
+  const [services, packs, gallery, logo, urls] = await Promise.all([
     query('SELECT id, nom, description, prix FROM services WHERE actif ORDER BY ordre, id'),
     query('SELECT id, nom, description, prix FROM packs WHERE actif ORDER BY ordre, id'),
     query('SELECT id, legende FROM gallery ORDER BY ordre, id'),
     query(`SELECT extract(epoch FROM updated_at)::bigint AS v FROM assets WHERE key = 'logo'`),
+    mediaUrls(),
   ]);
   res.set('Cache-Control', 'public, max-age=60');
   res.json({
-    settings: pub, services: services.rows, packs: packs.rows, gallery: gallery.rows,
+    settings: pub,
+    services: withImages(services.rows, 'service', urls),
+    packs: withImages(packs.rows, 'pack', urls),
+    gallery: gallery.rows,
+    about_image: urls.about ?? null,
     logo_version: logo.rows[0]?.v ?? null,
   });
 });
@@ -34,6 +40,13 @@ router.get('/logo', async (_req, res) => {
   const { rows } = await query(`SELECT mime, data FROM assets WHERE key = 'logo'`);
   if (!rows[0]) return res.status(404).end();
   res.set({ 'Content-Type': rows[0].mime, 'Cache-Control': 'public, max-age=86400' }).send(rows[0].data);
+});
+
+router.get('/media/:key', async (req, res) => {
+  if (!MEDIA_KEY.test(req.params.key)) return res.status(404).end();
+  const { rows } = await query('SELECT mime, data FROM assets WHERE key = $1', [req.params.key]);
+  if (!rows[0]) return res.status(404).end();
+  res.set({ 'Content-Type': rows[0].mime, 'Cache-Control': 'public, max-age=31536000, immutable' }).send(rows[0].data);
 });
 
 router.get('/gallery/:id/image', async (req, res) => {

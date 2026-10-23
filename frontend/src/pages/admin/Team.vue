@@ -1,10 +1,17 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { Copy, MessageCircle } from 'lucide-vue-next';
 import { api } from '../../api/http.js';
 import { auth } from '../../composables/useAuth.js';
 
 const users = ref([]); const error = ref(''); const ok = ref('');
 const f = reactive({ nom: '', email: '', telephone: '', password: '', role: 'staff' });
+const link = computed(() => `${location.origin}/admin`);
+const shareText = computed(() => `Voici l'espace équipe de l'institut. Ouvrez ce lien sur votre téléphone, connectez-vous, puis installez l'application : ${link.value}`);
+const waShare = computed(() => `https://wa.me/?text=${encodeURIComponent(shareText.value)}`);
+async function copyLink() {
+  try { await navigator.clipboard.writeText(link.value); ok.value = 'Lien copié.'; } catch { error.value = 'Copie impossible : copiez le lien à la main.'; }
+}
 async function load() { try { users.value = (await api('/admin/users')).users; } catch (e) { error.value = e.message; } }
 onMounted(load);
 async function add() {
@@ -21,6 +28,15 @@ async function toggle(u) {
 <template>
   <h1 style="font-size:1.6rem">Équipe</h1>
   <p v-if="error" class="err" role="alert">{{ error }}</p><p v-if="ok" class="okmsg">{{ ok }}</p>
+  <section class="card" style="margin-bottom:1rem">
+    <h2 style="font-size:1.2rem">Installer l'application sur le téléphone des employées</h2>
+    <p class="muted small" style="margin-top:0">Envoyez ce lien à chaque employée : elle l'ouvre sur son téléphone, se connecte, puis ajoute l'icône « KMB Gestion » à l'écran d'accueil.</p>
+    <p style="word-break:break-all;margin:.25rem 0 .75rem"><strong>{{ link }}</strong></p>
+    <div class="row two">
+      <a class="btn gold" :href="waShare" target="_blank" rel="noopener"><MessageCircle :size="18" /> Envoyer par WhatsApp</a>
+      <button class="btn ghost" type="button" @click="copyLink"><Copy :size="18" /> Copier le lien</button>
+    </div>
+  </section>
   <div class="stack">
     <div v-for="u in users" :key="u.id" class="card u">
       <div><strong>{{ u.nom }}</strong> <span class="badge">{{ u.role === 'owner' ? 'Propriétaire' : 'Employée' }}</span>

@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { CheckCircle2 } from 'lucide-vue-next';
 import { api } from '../api/http.js';
-import { site, waLink } from '../composables/useConfig.js';
+import { booking, site, waLink } from '../composables/useConfig.js';
 import { fdate, money, today } from '../composables/format.js';
 
 const form = reactive({ item: '', date: '', heure: '', nom: '', telephone: '', email: '' });
@@ -15,6 +15,8 @@ const selected = computed(() => {
   const list = type === 'service' ? site.services : site.packs;
   return list.find((x) => x.id === Number(id));
 });
+
+watch(() => booking.item, (v) => { if (v) form.item = v; }, { immediate: true });
 
 watch(() => form.date, async (d) => {
   form.heure = ''; slots.value = [];

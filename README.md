@@ -81,8 +81,16 @@ Ne jamais lancer `seed:demo` sur la base de production.
 8. Sur téléphone : ouvrir le site → menu du navigateur → « Ajouter à l'écran d'accueil ».
 9. Supprimer la réservation de test n'est pas prévu (historique) : l'**annuler** ; pour un nettoyage complet avant la livraison, recréer la base (`npm run migrate`, `npm run seed`, `npm run create-owner`).
 
+## 2 bis. Installer l'application sur le téléphone (employées)
+- Admin → Équipe : bouton « Envoyer par WhatsApp » avec le lien `https://VOTRE-SITE/admin`.
+- Android (Chrome) : ouvrir le lien, se connecter, toucher « Installer » (ou menu ⋮ → Installer l'application).
+- iPhone (Safari) : ouvrir le lien, Partager → Sur l'écran d'accueil.
+- L'icône « KMB Gestion » ouvre directement l'espace équipe ; l'icône « Keer Maam Birabar » installée depuis la page d'accueil ouvre le site public.
+- Le HTTPS est obligatoire (fourni par Vercel).
+
 ## 3. Premiers réglages (Admin → Réglages, propriétaire)
 Téléphone, WhatsApp (chiffres avec indicatif, ex. `221…`), adresse, horaires, réseaux, logo, couleurs, photos de galerie, texte « À propos », créneaux de réservation. Google Maps : sur Google Maps → Partager → Intégrer une carte → copier uniquement le lien `src="…"`.
+Images : Admin → Tarifs (ouvrir un service ou un pack → image), Admin → Réglages (photo de l'établissement et galerie). Sans image, un visuel élégant avec icône est affiché automatiquement. Les photos sont réduites automatiquement avant envoi.
 Admin → Tarifs : prix des services, nom/prix/description des packs (la composition des packs n'est pas pré-remplie).
 Admin → Équipe : créer les comptes employées (accès aux réservations, clientes, paiements, reçus ; pas aux tarifs, réglages ni comptes).
 

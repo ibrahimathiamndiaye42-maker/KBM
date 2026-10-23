@@ -6,6 +6,7 @@ import { AppError } from '../middleware/errors.js';
 import { requireAuth, requireOwner } from '../middleware/auth.js';
 import { SETTING_DEFS } from '../services/settings.js';
 import { resolveItem, upsertClient } from '../services/bookings.js';
+import { MEDIA_KEY, mediaUrls, withImages } from '../services/media.js';
 import { loadReceipt, renderReceipt } from '../services/receiptPdf.js';
 import {
   PAYMENT_METHODS, PAYMENT_STATUSES, RESERVATION_STATUSES, amount, dateStr, imageUpload,
@@ -286,7 +287,8 @@ const catalogSchema = z.object({
 
 for (const [path, table] of [['services', 'services'], ['packs', 'packs']]) {
   router.get(`/${path}`, async (_req, res) => {
-    res.json({ items: (await query(`SELECT * FROM ${table} ORDER BY ordre, id`)).rows });
+    const rows = (await query(`SELECT * FROM ${table} ORDER BY ordre, id`)).rows;
+    res.json({ items: withImages(rows, table === 'services' ? 'service' : 'pack', await mediaUrls()) });
   });
   router.post(`/${path}`, requireOwner, async (req, res) => {
     const b = catalogSchema.parse(req.body);
@@ -344,6 +346,22 @@ router.put('/logo', requireOwner, async (req, res) => {
 });
 router.delete('/logo', requireOwner, async (_req, res) => {
   await query(`DELETE FROM assets WHERE key = 'logo'`);
+  res.json({ ok: true });
+});
+
+// Images des services, packs et de la section « À propos »
+router.put('/media/:key', requireOwner, async (req, res) => {
+  if (!MEDIA_KEY.test(req.params.key)) throw new AppError(400, 'Clé image invalide.');
+  const b = imageUpload.parse(req.body);
+  await query(
+    `INSERT INTO assets(key, mime, data, updated_at) VALUES ($1,$2,$3,now())
+     ON CONFLICT (key) DO UPDATE SET mime = EXCLUDED.mime, data = EXCLUDED.data, updated_at = now()`,
+    [req.params.key, b.mime, Buffer.from(b.data, 'base64')]);
+  res.json({ ok: true });
+});
+router.delete('/media/:key', requireOwner, async (req, res) => {
+  if (!MEDIA_KEY.test(req.params.key)) throw new AppError(400, 'Clé image invalide.');
+  await query('DELETE FROM assets WHERE key = $1', [req.params.key]);
   res.json({ ok: true });
 });
 

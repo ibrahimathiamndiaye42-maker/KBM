@@ -32,4 +32,15 @@ router.beforeEach(async (to) => {
   if (to.path === '/admin/login' && auth.user) return '/admin';
 });
 
+// Sur /admin, l'application installée est « KMB Gestion » et s'ouvre directement sur l'espace équipe.
+// Ailleurs, c'est l'application publique. Le navigateur lit le manifeste au moment de l'installation.
+router.afterEach((to) => {
+  const link = document.querySelector('link[rel="manifest"]');
+  if (!link) return;
+  const admin = to.path.startsWith('/admin');
+  if (!link.dataset.public) link.dataset.public = link.getAttribute('href');
+  link.setAttribute('href', admin ? '/manifest-admin.webmanifest' : link.dataset.public);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', admin ? '#1A110F' : '#56372F');
+});
+
 export default router;
