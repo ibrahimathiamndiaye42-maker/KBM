@@ -38,6 +38,28 @@ router.post('/logout', (_req, res) => {
 
 router.get('/me', requireAuth, (req, res) => res.json({ user: req.user }));
 
+// Modifier ses propres coordonnées (changer d'e-mail exige le mot de passe actuel)
+router.patch('/me', requireAuth, async (req, res) => {
+  const b = z.object({
+    nom: z.string().trim().min(2).max(100),
+    email: z.string().trim().toLowerCase().email().max(150),
+    telephone: z.string().trim().max(30).optional().default(''),
+    password: z.string().max(200).optional(),
+  }).parse(req.body);
+  const cur = (await query('SELECT email, password_hash FROM users WHERE id = $1', [req.user.id])).rows[0];
+  if (b.email !== cur.email && !(b.password && (await bcrypt.compare(b.password, cur.password_hash))))
+    throw new AppError(400, "Mot de passe actuel requis pour changer l'adresse e-mail.");
+  try {
+    const { rows } = await query(
+      'UPDATE users SET nom = $1, email = $2, telephone = $3 WHERE id = $4 RETURNING id, nom, email, telephone, role',
+      [b.nom, b.email, b.telephone || null, req.user.id]);
+    res.json({ user: rows[0] });
+  } catch (e) {
+    if (e.code === '23505') throw new AppError(409, 'Cette adresse e-mail est déjà utilisée.');
+    throw e;
+  }
+});
+
 router.post('/change-password', requireAuth, async (req, res) => {
   const { current, next } = z.object({
     current: z.string().min(1),

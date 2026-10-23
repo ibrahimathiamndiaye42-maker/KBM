@@ -1,11 +1,11 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { BellRing, Download, Eye, MessageCircle, Phone, Printer, Send } from 'lucide-vue-next';
+import { BellRing, Download, Eye, FileUp, MessageCircle, Phone, Printer, Send } from 'lucide-vue-next';
 import Modal from './Modal.vue';
 import { api } from '../api/http.js';
 import { bump } from '../composables/adminBus.js';
 import { fdate, money, MOYENS, PAIEMENT, STATUT } from '../composables/format.js';
-import { downloadReceipt, printReceipt, shareReceipt, viewReceipt } from '../composables/receipt.js';
+import { canShareFile, downloadReceipt, prefetchReceiptFile, printReceipt, receiptMessage, receiptWaUrl, shareFile, viewReceipt } from '../composables/receipt.js';
 
 const props = defineProps({ id: Number });
 const emit = defineEmits(['close']);
@@ -14,10 +14,23 @@ const r = ref(null); const error = ref(''); const busy = ref(false); const editi
 const pay = reactive({ moyen: 'ESPECES', montant: 0 });
 const edit = reactive({ date: '', heure: '', item: '', montant: 0, notes: '' });
 const catalog = reactive({ services: [], packs: [] });
+const pdfFile = ref(null);   // PDF préchargé pour le partage natif (voir receipt.js)
+const waUrl = computed(() => r.value?.receipt_token ? receiptWaUrl({
+  telephone: r.value.client_telephone, nom: r.value.client_nom, numero: r.value.receipt_numero, token: r.value.receipt_token }) : null);
+async function preparePdf() {
+  pdfFile.value = null;
+  if (!r.value?.receipt_id) return;
+  try { const f = await prefetchReceiptFile(r.value.receipt_id, r.value.receipt_numero); pdfFile.value = canShareFile(f) ? f : null; } catch { /* le lien WhatsApp reste disponible */ }
+}
+async function sharePdf() {
+  try { await shareFile(pdfFile.value, receiptMessage({ nom: r.value.client_nom, numero: r.value.receipt_numero, token: r.value.receipt_token })); }
+  catch (e) { if (e.name !== 'AbortError') error.value = 'Partage impossible. Utilisez le bouton WhatsApp.'; }
+}
 
 async function load() {
   r.value = (await api(`/admin/reservations/${props.id}`)).reservation;
   pay.moyen = r.value.paiement_moyen || 'ESPECES'; pay.montant = r.value.paiement_montant ?? r.value.montant;
+  preparePdf();
   Object.assign(edit, { date: r.value.date, heure: r.value.heure, montant: r.value.montant, notes: r.value.notes || '',
     item: r.value.service_id ? `service:${r.value.service_id}` : `pack:${r.value.pack_id}` });
 }
@@ -119,8 +132,10 @@ const canReceipt = computed(() => r.value?.paiement_statut === 'CONFIRME');
             <button class="btn sm ghost" @click="act(() => viewReceipt(r.receipt_id))()"><Eye :size="16" /> Voir</button>
             <button class="btn sm ghost" @click="act(() => downloadReceipt(r.receipt_id, r.receipt_numero))()"><Download :size="16" /> Télécharger</button>
             <button class="btn sm ghost" @click="act(() => printReceipt(r.receipt_id))()"><Printer :size="16" /> Imprimer</button>
-            <button class="btn sm gold" @click="act(() => shareReceipt(r.receipt_id, r.receipt_numero, { nom: r.client_nom, telephone: r.client_telephone }))()"><Send :size="16" /> Envoyer à la cliente</button>
           </div>
+          <a class="btn gold block send" :href="waUrl" target="_blank" rel="noopener"><Send :size="18" /> Envoyer le reçu à la cliente (WhatsApp)</a>
+          <p class="muted small" style="margin:.4rem 0 0">Ouvre la conversation avec +{{ r.client_telephone }}, message prêt à envoyer avec le lien du reçu PDF.</p>
+          <button v-if="pdfFile" type="button" class="btn ghost sm block send" @click="sharePdf"><FileUp :size="16" /> Joindre le PDF à la place</button>
         </template>
       </div>
 
@@ -147,7 +162,8 @@ const canReceipt = computed(() => r.value?.paiement_statut === 'CONFIRME');
 </template>
 
 <style scoped>
-.acts { display: flex; flex-wrap: wrap; gap: .5rem; }
+.acts { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+.send { margin-top: .5rem; }
 .todo { border-left: 4px solid var(--gold); }
 .notif { display: flex; align-items: center; gap: .4rem; margin: 0; padding: .5rem .75rem; border-radius: 10px; background: #fff; border: 1px solid var(--line); flex-wrap: wrap; }
 .notif.ENVOYEE { color: var(--ok); } .notif.ECHEC { color: var(--bad); }

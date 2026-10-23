@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -25,7 +26,7 @@ const RESERVATION_SELECT = `
          r.montant, r.statut, r.source, r.notes, r.created_at,
          p.id AS payment_id, p.statut AS paiement_statut, p.moyen AS paiement_moyen,
          p.montant AS paiement_montant, p.confirmed_at,
-         rc.id AS receipt_id, rc.numero AS receipt_numero,
+         rc.id AS receipt_id, rc.numero AS receipt_numero, rc.share_token AS receipt_token,
          (SELECT n.statut FROM notifications n WHERE n.reservation_id = r.id ORDER BY n.id DESC LIMIT 1) AS notif_statut,
          (SELECT n.erreur FROM notifications n WHERE n.reservation_id = r.id ORDER BY n.id DESC LIMIT 1) AS notif_erreur
     FROM reservations r
@@ -234,9 +235,10 @@ router.post('/reservations/:id/receipt', async (req, res) => {
        ON CONFLICT (year) DO UPDATE SET last_seq = receipt_counters.last_seq + 1 RETURNING last_seq`, [year]);
     const numero = `KMB-${year}-${String(rows[0].last_seq).padStart(6, '0')}`;
     return (await db.query(
-      `INSERT INTO receipts(numero, client_id, reservation_id, payment_id, montant, moyen, paid_at, generated_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [numero, p.client_id, rid, p.id, p.montant, p.moyen, p.confirmed_at ?? new Date(), req.user.id])).rows[0];
+      `INSERT INTO receipts(numero, client_id, reservation_id, payment_id, montant, moyen, paid_at, generated_by, share_token)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [numero, p.client_id, rid, p.id, p.montant, p.moyen, p.confirmed_at ?? new Date(), req.user.id,
+        crypto.randomBytes(24).toString('hex')])).rows[0];
   });
   res.status(201).json({ receipt });
 });
@@ -273,7 +275,7 @@ router.get('/clients/:id', async (req, res) => {
   res.json({
     client,
     reservations: rows,
-    receipts: rows.filter((r) => r.receipt_id).map((r) => ({ id: r.receipt_id, numero: r.receipt_numero, item_label: r.item_label, montant: r.paiement_montant, date: r.date })),
+    receipts: rows.filter((r) => r.receipt_id).map((r) => ({ id: r.receipt_id, numero: r.receipt_numero, token: r.receipt_token, item_label: r.item_label, montant: r.paiement_montant, date: r.date })),
   });
 });
 
@@ -415,6 +417,22 @@ router.post('/users', requireOwner, async (req, res) => {
   res.status(201).json({ user: rows[0] });
 });
 
+// Transfert du rôle de propriétaire : la personne choisie devient propriétaire, l'ancienne devient employée.
+router.post('/users/transfer-ownership', requireOwner, async (req, res) => {
+  const b = z.object({ user_id: z.coerce.number().int().positive(), password: z.string().min(1).max(200) }).parse(req.body);
+  if (b.user_id === req.user.id) throw new AppError(400, 'Choisissez une autre personne.');
+  const me = (await query('SELECT password_hash FROM users WHERE id = $1', [req.user.id])).rows[0];
+  if (!(await bcrypt.compare(b.password, me.password_hash))) throw new AppError(400, 'Mot de passe incorrect.');
+  await withTransaction(async (db) => {
+    const target = (await db.query('SELECT id, actif FROM users WHERE id = $1 FOR UPDATE', [b.user_id])).rows[0];
+    if (!target) throw new AppError(404, 'Utilisateur introuvable.');
+    if (!target.actif) throw new AppError(400, "Ce compte est désactivé : réactivez-le d'abord.");
+    await db.query(`UPDATE users SET role = 'owner' WHERE id = $1`, [b.user_id]);
+    await db.query(`UPDATE users SET role = 'staff' WHERE id = $1`, [req.user.id]);
+  });
+  res.json({ ok: true });
+});
+
 router.patch('/users/:id', requireOwner, async (req, res) => {
   const uid = id(req.params.id);
   const b = z.object({
@@ -422,7 +440,13 @@ router.patch('/users/:id', requireOwner, async (req, res) => {
     password: z.string().min(10).max(200).optional(),
   }).parse(req.body);
   if (uid === req.user.id && (b.actif === false || b.role === 'staff'))
-    throw new AppError(400, 'Vous ne pouvez pas retirer vos propres droits.');
+    throw new AppError(400, 'Pour quitter le rôle de propriétaire, utilisez « Transférer le rôle » dans Mon compte.');
+  if (b.actif === false || b.role === 'staff') {
+    const others = await query(`SELECT count(*)::int AS n FROM users WHERE role = 'owner' AND actif AND id <> $1`, [uid]);
+    const target = (await query('SELECT role FROM users WHERE id = $1', [uid])).rows[0];
+    if (target?.role === 'owner' && others.rows[0].n === 0)
+      throw new AppError(409, 'Il doit rester au moins un propriétaire actif.');
+  }
   const hash = b.password ? await bcrypt.hash(b.password, 12) : null;
   const { rows } = await query(
     `UPDATE users SET actif = COALESCE($1, actif), role = COALESCE($2, role), password_hash = COALESCE($3, password_hash)

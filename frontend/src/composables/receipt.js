@@ -17,13 +17,25 @@ export async function printReceipt(id) {
   document.body.appendChild(f);
   setTimeout(() => f.remove(), 60000);
 }
-// Envoie le reçu à la cliente : sur téléphone, la feuille de partage s'ouvre avec le PDF déjà joint
-// (choisir WhatsApp puis la cliente). Sur ordinateur, le PDF est téléchargé et la conversation WhatsApp
-// de la cliente s'ouvre avec un message prêt : il reste à joindre le fichier.
-export async function shareReceipt(id, numero, client = {}) {
-  const file = new File([await load(id)], `${numero}.pdf`, { type: 'application/pdf' });
-  const text = `Bonjour${client.nom ? ` ${client.nom}` : ''}, voici votre reçu de réservation ${numero}. Votre réservation est confirmée. Merci de votre confiance !`;
-  if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: `Reçu ${numero}`, text }); return; }
-  await downloadReceipt(id, numero);
-  if (client.telephone) window.open(`https://wa.me/${client.telephone}?text=${encodeURIComponent(text)}`, '_blank');
+// --- Envoi à la cliente ---
+// Lien non devinable vers le PDF (ouvert sans connexion). Il passe par le même domaine que le site.
+export const receiptLink = (token) => `${location.origin}/api/public/receipts/${token}/pdf`;
+
+export const receiptMessage = ({ nom, numero, token }) =>
+  `Bonjour${nom ? ` ${nom}` : ''}, merci pour votre confiance. Votre réservation est confirmée. `
+  + `Voici votre reçu ${numero} (PDF) : ${receiptLink(token)}`;
+
+// Lien WhatsApp ouvrant directement la conversation avec la cliente, message prêt à envoyer.
+// C'est un simple lien : il s'ouvre au clic, sans attente réseau, donc jamais bloqué par le navigateur.
+export const receiptWaUrl = ({ telephone, nom, numero, token }) =>
+  `https://wa.me/${String(telephone).replace(/\D/g, '')}?text=${encodeURIComponent(receiptMessage({ nom, numero, token }))}`;
+
+// Variante « joindre le fichier » : le PDF doit être chargé AVANT le clic, car le partage natif
+// n'est autorisé que dans le geste de l'utilisateur (une attente réseau l'annule).
+export async function prefetchReceiptFile(id, numero) {
+  return new File([await load(id)], `${numero}.pdf`, { type: 'application/pdf' });
+}
+export const canShareFile = (file) => Boolean(file && navigator.canShare?.({ files: [file] }));
+export function shareFile(file, text) {
+  return navigator.share({ files: [file], title: file.name, text });
 }

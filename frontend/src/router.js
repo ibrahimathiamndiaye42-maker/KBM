@@ -11,6 +11,7 @@ const routes = [
       { path: 'reservations', component: () => import('./pages/admin/Reservations.vue') },
       { path: 'clientes', component: () => import('./pages/admin/Clients.vue') },
       { path: 'clientes/:id', component: () => import('./pages/admin/ClientDetail.vue') },
+      { path: 'compte', component: () => import('./pages/admin/Account.vue') },
       { path: 'catalogue', component: () => import('./pages/admin/Catalogue.vue'), meta: { owner: true } },
       { path: 'reglages', component: () => import('./pages/admin/Settings.vue'), meta: { owner: true } },
       { path: 'equipe', component: () => import('./pages/admin/Team.vue'), meta: { owner: true } },

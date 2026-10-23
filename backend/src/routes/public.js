@@ -6,6 +6,7 @@ import { AppError } from '../middleware/errors.js';
 import { SETTING_DEFS, getSettings } from '../services/settings.js';
 import { notifyNewReservation } from '../services/notify.js';
 import { buildSlots, resolveItem, upsertClient } from '../services/bookings.js';
+import { loadReceipt, renderReceipt } from '../services/receiptPdf.js';
 import { MEDIA_KEY, mediaUrls, withImages } from '../services/media.js';
 import { dateStr, name, optionalEmail, phone, timeStr, todayStr } from '../services/validators.js';
 
@@ -60,6 +61,20 @@ router.get('/gallery/:id/image', async (req, res) => {
 router.get('/slots', async (req, res) => {
   const { date } = z.object({ date: dateStr }).parse(req.query);
   res.json({ date, slots: await buildSlots({ query }, date) });
+});
+
+// Lien du reçu envoyé à la cliente : le jeton aléatoire (192 bits) tient lieu de mot de passe
+const receiptLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Trop de requêtes. Réessayez dans quelques minutes.' } });
+router.get('/receipts/:token/pdf', receiptLimiter, async (req, res) => {
+  const token = z.string().regex(/^[a-f0-9]{48,64}$/).safeParse(req.params.token);
+  if (!token.success) return res.status(404).json({ error: 'Reçu introuvable.' });
+  const hit = (await query('SELECT id FROM receipts WHERE share_token = $1', [token.data])).rows[0];
+  if (!hit) return res.status(404).json({ error: 'Reçu introuvable.' });
+  const receipt = await loadReceipt(hit.id);
+  res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${receipt.numero}.pdf"`,
+    'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' });
+  await renderReceipt(receipt, res);
 });
 
 const bookingSchema = z.object({

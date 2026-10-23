@@ -28,7 +28,7 @@ export async function requireAuth(req, _res, next) {
     throw new AppError(401, 'Session expirée. Reconnectez-vous.');
   }
   const { rows } = await query(
-    'SELECT id, nom, email, role, actif FROM users WHERE id = $1', [payload.sub]);
+    'SELECT id, nom, email, telephone, role, actif FROM users WHERE id = $1', [payload.sub]);
   const user = rows[0];
   if (!user || !user.actif) throw new AppError(401, 'Compte inactif ou introuvable.');
   req.user = user;

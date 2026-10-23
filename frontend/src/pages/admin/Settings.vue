@@ -7,7 +7,7 @@ import { loadSite, site } from '../../composables/useConfig.js';
 
 const s = reactive({}); const error = ref(''); const ok = ref(''); const busy = ref(false);
 const notif = ref(null);
-const pw = reactive({ current: '', next: '' }); const gallery = ref([]);
+const gallery = ref([]);
 
 const FIELDS = [
   ['Identité', [['business_name', 'Nom de l\'institut'], ['tagline', 'Slogan'], ['about_text', 'Texte « À propos »', 'textarea']]],
@@ -50,9 +50,6 @@ const testNotif = () => flash(async () => {
   if (r.statut === 'ECHEC') throw new Error(r.erreur);
   if (r.statut === 'NON_CONFIGUREE') throw new Error('Notifications non activées sur le serveur.');
 }, 'Message de test envoyé : vérifiez WhatsApp.');
-const changePw = () => flash(async () => {
-  await api('/auth/change-password', { method: 'POST', body: { ...pw } }); pw.current = ''; pw.next = '';
-}, 'Mot de passe modifié.');
 </script>
 <template>
   <h1 style="font-size:1.6rem">Réglages</h1>
@@ -96,11 +93,5 @@ const changePw = () => flash(async () => {
     <div class="gal"><div v-for="g in gallery" :key="g.id"><img :src="`/api/public/gallery/${g.id}/image`" alt="" /><button class="btn danger sm block" @click="delPhoto(g.id)">Supprimer</button></div></div>
   </section>
 
-  <form class="card" style="margin-top:1rem" @submit.prevent="changePw">
-    <h2 style="font-size:1.2rem">Mon mot de passe</h2>
-    <div class="field"><label for="pw1">Mot de passe actuel</label><input id="pw1" type="password" v-model="pw.current" autocomplete="current-password" /></div>
-    <div class="field"><label for="pw2">Nouveau mot de passe (10 caractères minimum)</label><input id="pw2" type="password" v-model="pw.next" autocomplete="new-password" /></div>
-    <button class="btn ghost block" :disabled="busy">Changer le mot de passe</button>
-  </form>
 </template>
 <style scoped>.gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: .6rem; } .gal img { aspect-ratio: 1; object-fit: cover; width: 100%; border-radius: 10px; margin-bottom: .3rem; }</style>

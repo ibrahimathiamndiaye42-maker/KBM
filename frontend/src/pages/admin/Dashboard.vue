@@ -8,6 +8,7 @@ import { bus } from '../../composables/adminBus.js';
 import { auth } from '../../composables/useAuth.js';
 import { money } from '../../composables/format.js';
 
+const flash = (() => { const m = sessionStorage.getItem('kmb_flash'); sessionStorage.removeItem('kmb_flash'); return m; })();
 const d = ref(null); const error = ref(''); const openId = ref(null);
 async function load() { try { d.value = await api('/admin/dashboard'); } catch (e) { error.value = e.message; } }
 onMounted(load); watch(() => bus.tick, load);
@@ -18,6 +19,7 @@ const tiles = (x) => [
 </script>
 <template>
   <h1 style="font-size:1.6rem">Bonjour {{ auth.user?.nom.split(' ')[0] }}</h1>
+  <p v-if="flash" class="okmsg" role="status">{{ flash }}</p>
   <InstallCard dismissible />
   <p v-if="error" class="err">{{ error }}</p>
   <template v-if="d">

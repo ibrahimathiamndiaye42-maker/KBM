@@ -103,7 +103,13 @@ L'envoi automatique passe par l'**API officielle WhatsApp Business (Meta)**. Ét
 
 Sans modèle (`WHATSAPP_TEMPLATE_NAME` vide), un message texte libre est envoyé, mais WhatsApp ne l'accepte que dans les 24 h suivant un message de l'institut vers ce numéro : à réserver aux essais.
 
-Envoi du reçu à la cliente : Admin → Réservations → Reçu → « Envoyer à la cliente ». Sur téléphone, le PDF est joint à la feuille de partage (choisir WhatsApp). Sur ordinateur, le PDF est téléchargé et la conversation WhatsApp s'ouvre : joindre le fichier.
+Envoi du reçu à la cliente : Admin → Réservations → Reçu → « Envoyer le reçu à la cliente (WhatsApp) ». La conversation WhatsApp avec le numéro de la cliente s'ouvre, message prêt avec un lien de téléchargement du PDF (lien long et non devinable, ouvert sans connexion). Il reste à toucher « Envoyer ». Le bouton « Joindre le PDF à la place » (téléphone) joint le fichier lui-même.
+
+## 2 quater. Compte, propriétaire et application installée
+- Menu rond (initiale) en haut à droite → **Mon compte** : modifier nom, e-mail (mot de passe demandé), téléphone, mot de passe.
+- **Transférer le rôle de propriétaire** (Mon compte, propriétaire uniquement) : choisir une autre personne active, confirmer par son mot de passe. Elle devient propriétaire, l'ancienne devient employée. Pour partager la gestion sans transférer : Équipe → créer un compte avec le rôle « Propriétaire ». Il reste toujours au moins un propriétaire actif.
+- Terminal (secours) : `npm run create-owner -- --nom ... --email ... --password ...` crée un propriétaire supplémentaire.
+- Mon compte → **Application sur le téléphone** : état de l'installation et guide Installer / Désinstaller (Android, iPhone, ordinateur). Une page web ne peut pas supprimer l'icône : la désinstallation se fait depuis le téléphone.
 
 ## 3. Premiers réglages (Admin → Réglages, propriétaire)
 Téléphone, WhatsApp (chiffres avec indicatif, ex. `221…`), adresse, horaires, réseaux, logo, couleurs, photos de galerie, texte « À propos », créneaux de réservation. Google Maps : sur Google Maps → Partager → Intégrer une carte → copier uniquement le lien `src="…"`.

@@ -1,12 +1,11 @@
 <script setup>
-import { LayoutDashboard, CalendarDays, Users, Tags, Settings, UserCog, LogOut, Plus, ArrowLeft } from 'lucide-vue-next';
-import { useRouter } from 'vue-router';
+import { LayoutDashboard, CalendarDays, Users, Tags, Settings, UserCog, Plus, ArrowLeft } from 'lucide-vue-next';
 import WalkInForm from '../../components/WalkInForm.vue';
 import BrandLogo from '../../components/BrandLogo.vue';
-import { auth, logout } from '../../composables/useAuth.js';
+import AccountMenu from '../../components/AccountMenu.vue';
+import { auth } from '../../composables/useAuth.js';
 import { bus } from '../../composables/adminBus.js';
 
-const router = useRouter();
 const nav = [
   { to: '/admin', label: 'Accueil', icon: LayoutDashboard, exact: true },
   { to: '/admin/reservations', label: 'Réservations', icon: CalendarDays },
@@ -16,7 +15,6 @@ const nav = [
   { to: '/admin/equipe', label: 'Équipe', icon: UserCog, owner: true },
 ];
 const items = () => nav.filter((n) => !n.owner || auth.user?.role === 'owner');
-async function out() { await logout(); router.replace('/admin/login'); }
 </script>
 
 <template>
@@ -25,7 +23,7 @@ async function out() { await logout(); router.replace('/admin/login'); }
       <RouterLink to="/" class="back" title="Retour au site"><ArrowLeft :size="18" /><span class="long">Retour au site</span><span class="short">Retour</span></RouterLink>
       <strong class="t"><BrandLogo :size="30" /> <span>Gestion</span></strong>
       <button class="btn gold sm" @click="bus.walkIn = true"><Plus :size="16" /> Nouvelle cliente</button>
-      <button class="icon-btn" aria-label="Se déconnecter" title="Se déconnecter" @click="out"><LogOut :size="20" /></button>
+      <AccountMenu />
     </header>
     <nav class="nav" aria-label="Administration">
       <RouterLink v-for="n in items()" :key="n.to" :to="n.to" :exact-active-class="n.exact ? 'on' : ''" :active-class="n.exact ? '' : 'on'">

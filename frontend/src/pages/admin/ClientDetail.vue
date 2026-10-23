@@ -1,13 +1,13 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { Download, Eye, Share2 } from 'lucide-vue-next';
+import { Download, Eye, Send } from 'lucide-vue-next';
 import ReservationRow from '../../components/ReservationRow.vue';
 import ReservationSheet from '../../components/ReservationSheet.vue';
 import { api } from '../../api/http.js';
 import { bus } from '../../composables/adminBus.js';
 import { fdate, money } from '../../composables/format.js';
-import { downloadReceipt, shareReceipt, viewReceipt } from '../../composables/receipt.js';
+import { downloadReceipt, receiptWaUrl, viewReceipt } from '../../composables/receipt.js';
 
 const route = useRoute();
 const d = ref(null); const error = ref(''); const openId = ref(null);
@@ -33,7 +33,8 @@ const guard = (fn) => async () => { try { await fn(); } catch (e) { error.value 
         <div class="acts">
           <button class="icon-btn" aria-label="Voir" @click="guard(() => viewReceipt(r.id))()"><Eye :size="20" /></button>
           <button class="icon-btn" aria-label="Télécharger" @click="guard(() => downloadReceipt(r.id, r.numero))()"><Download :size="20" /></button>
-          <button class="icon-btn" aria-label="Partager" @click="guard(() => shareReceipt(r.id, r.numero, d.client))()"><Share2 :size="20" /></button>
+          <a class="icon-btn" aria-label="Envoyer le reçu par WhatsApp" title="Envoyer par WhatsApp" target="_blank" rel="noopener"
+            :href="receiptWaUrl({ telephone: d.client.telephone, nom: d.client.nom, numero: r.numero, token: r.token })"><Send :size="20" /></a>
         </div>
       </div></div>
   </template>
