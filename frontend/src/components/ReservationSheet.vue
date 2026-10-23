@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Download, Eye, Printer, Share2 } from 'lucide-vue-next';
+import { BellRing, Download, Eye, MessageCircle, Phone, Printer, Send } from 'lucide-vue-next';
 import Modal from './Modal.vue';
 import { api } from '../api/http.js';
 import { bump } from '../composables/adminBus.js';
@@ -36,6 +36,11 @@ async function run(fn) {
 const setStatus = (statut) => run(() => api(`/admin/reservations/${props.id}`, { method: 'PATCH', body: { statut } }));
 const setPayment = (statut) => run(() => api(`/admin/reservations/${props.id}/payment`, { method: 'PUT',
   body: { statut, moyen: statut === 'CONFIRME' ? pay.moyen : undefined, montant: Number(pay.montant) } }));
+const resend = () => run(async () => {
+  const r2 = await api(`/admin/reservations/${props.id}/notify`, { method: 'POST' });
+  if (r2.statut === 'NON_CONFIGUREE') throw new Error('Les notifications WhatsApp ne sont pas encore activées sur le serveur.');
+  if (r2.statut === 'ECHEC') throw new Error(`Envoi impossible : ${r2.erreur}`);
+});
 const makeReceipt = () => run(() => api(`/admin/reservations/${props.id}/receipt`, { method: 'POST' }));
 const saveEdit = () => run(async () => {
   const [type, id] = edit.item.split(':');
@@ -65,8 +70,24 @@ const canReceipt = computed(() => r.value?.paiement_statut === 'CONFIRME');
           <span class="badge">{{ r.source === 'SUR_PLACE' ? 'Sur place' : 'En ligne' }}</span></p>
       </div>
 
+      <div v-if="r.statut === 'EN_ATTENTE' && r.paiement_statut !== 'CONFIRME'" class="card todo">
+        <strong>À faire : appeler la cliente</strong>
+        <p class="muted small" style="margin:.2rem 0 .6rem">Vérifier ses informations et lui indiquer comment payer. La réservation sera confirmée après réception du paiement.</p>
+        <div class="row two">
+          <a class="btn gold" :href="`tel:+${r.client_telephone}`"><Phone :size="18" /> Appeler</a>
+          <a class="btn ghost" :href="`https://wa.me/${r.client_telephone}`" target="_blank" rel="noopener"><MessageCircle :size="18" /> WhatsApp</a>
+        </div>
+      </div>
+
+      <p v-if="r.source === 'EN_LIGNE'" class="notif small" :class="r.notif_statut">
+        <BellRing :size="16" />
+        <span v-if="r.notif_statut === 'ENVOYEE'">Notification WhatsApp envoyée à l'institut.</span>
+        <span v-else-if="r.notif_statut === 'ECHEC'">Notification WhatsApp non envoyée{{ r.notif_erreur ? ` : ${r.notif_erreur}` : '' }}</span>
+        <span v-else>Notification WhatsApp non activée.</span>
+        <button v-if="r.notif_statut !== 'ENVOYEE'" type="button" class="link" :disabled="busy" @click="resend">Renvoyer</button>
+      </p>
+
       <div v-if="r.statut !== 'ANNULEE'" class="row two">
-        <button v-if="r.statut === 'EN_ATTENTE'" class="btn" :disabled="busy" @click="setStatus('CONFIRMEE')">Confirmer</button>
         <button v-if="r.statut === 'CONFIRMEE'" class="btn" :disabled="busy" @click="setStatus('TERMINEE')">Marquer terminée</button>
         <button v-if="r.paiement_statut !== 'CONFIRME'" class="btn danger" :disabled="busy" @click="setStatus('ANNULEE')">Annuler la réservation</button>
       </div>
@@ -98,7 +119,7 @@ const canReceipt = computed(() => r.value?.paiement_statut === 'CONFIRME');
             <button class="btn sm ghost" @click="act(() => viewReceipt(r.receipt_id))()"><Eye :size="16" /> Voir</button>
             <button class="btn sm ghost" @click="act(() => downloadReceipt(r.receipt_id, r.receipt_numero))()"><Download :size="16" /> Télécharger</button>
             <button class="btn sm ghost" @click="act(() => printReceipt(r.receipt_id))()"><Printer :size="16" /> Imprimer</button>
-            <button class="btn sm gold" @click="act(() => shareReceipt(r.receipt_id, r.receipt_numero))()"><Share2 :size="16" /> Partager</button>
+            <button class="btn sm gold" @click="act(() => shareReceipt(r.receipt_id, r.receipt_numero, { nom: r.client_nom, telephone: r.client_telephone }))()"><Send :size="16" /> Envoyer à la cliente</button>
           </div>
         </template>
       </div>
@@ -125,4 +146,10 @@ const canReceipt = computed(() => r.value?.paiement_statut === 'CONFIRME');
   </Modal>
 </template>
 
-<style scoped>.acts { display: flex; flex-wrap: wrap; gap: .5rem; }</style>
+<style scoped>
+.acts { display: flex; flex-wrap: wrap; gap: .5rem; }
+.todo { border-left: 4px solid var(--gold); }
+.notif { display: flex; align-items: center; gap: .4rem; margin: 0; padding: .5rem .75rem; border-radius: 10px; background: #fff; border: 1px solid var(--line); flex-wrap: wrap; }
+.notif.ENVOYEE { color: var(--ok); } .notif.ECHEC { color: var(--bad); }
+.link { border: 0; background: none; color: var(--choco); text-decoration: underline; font: 600 .85rem var(--sans); cursor: pointer; padding: .4rem; min-height: 36px; }
+</style>

@@ -17,8 +17,13 @@ export async function printReceipt(id) {
   document.body.appendChild(f);
   setTimeout(() => f.remove(), 60000);
 }
-export async function shareReceipt(id, numero) {
+// Envoie le reçu à la cliente : sur téléphone, la feuille de partage s'ouvre avec le PDF déjà joint
+// (choisir WhatsApp puis la cliente). Sur ordinateur, le PDF est téléchargé et la conversation WhatsApp
+// de la cliente s'ouvre avec un message prêt : il reste à joindre le fichier.
+export async function shareReceipt(id, numero, client = {}) {
   const file = new File([await load(id)], `${numero}.pdf`, { type: 'application/pdf' });
-  if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: `Reçu ${numero}` });
-  else await downloadReceipt(id, numero);
+  const text = `Bonjour${client.nom ? ` ${client.nom}` : ''}, voici votre reçu de réservation ${numero}. Votre réservation est confirmée. Merci de votre confiance !`;
+  if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: `Reçu ${numero}`, text }); return; }
+  await downloadReceipt(id, numero);
+  if (client.telephone) window.open(`https://wa.me/${client.telephone}?text=${encodeURIComponent(text)}`, '_blank');
 }

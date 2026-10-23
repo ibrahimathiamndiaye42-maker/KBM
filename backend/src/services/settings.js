@@ -11,6 +11,7 @@ export const SETTING_DEFS = {
   address:        { public: true,  default: '' },
   maps_embed_url: { public: true,  default: '' },   // src de l'iframe « Intégrer une carte » Google Maps
   maps_link:      { public: true,  default: '' },
+  payment_methods:{ public: true,  default: '' },   // moyens de paiement acceptés, affichés dans le parcours de réservation
   hours:          { public: true,  default: '' },   // texte libre, ex. « Lun–Sam : 9h–19h »
   instagram:      { public: true,  default: '' },
   facebook:       { public: true,  default: '' },

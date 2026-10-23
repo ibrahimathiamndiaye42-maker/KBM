@@ -22,4 +22,14 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '12h',
   corsOrigin: (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean),
   trustProxy: process.env.TRUST_PROXY !== 'false',
+  // Notifications WhatsApp (API officielle Meta). Facultatif : sans ces variables, rien n'est envoyé
+  // mais les réservations fonctionnent normalement et le statut « non configurée » s'affiche dans l'admin.
+  whatsapp: {
+    token: process.env.WHATSAPP_TOKEN || '',
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+    templateName: process.env.WHATSAPP_TEMPLATE_NAME || '',
+    templateLang: process.env.WHATSAPP_TEMPLATE_LANG || 'fr',
+    apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
+    apiBase: process.env.WHATSAPP_API_BASE || 'https://graph.facebook.com',
+  },
 };

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { query, withTransaction } from '../db/pool.js';
 import { AppError } from '../middleware/errors.js';
 import { SETTING_DEFS, getSettings } from '../services/settings.js';
+import { notifyNewReservation } from '../services/notify.js';
 import { buildSlots, resolveItem, upsertClient } from '../services/bookings.js';
 import { MEDIA_KEY, mediaUrls, withImages } from '../services/media.js';
 import { dateStr, name, optionalEmail, phone, timeStr, todayStr } from '../services/validators.js';
@@ -94,9 +95,12 @@ router.post('/reservations', bookingLimiter, async (req, res) => {
     return { ...rows[0], item_label: item.nom, montant: item.prix };
   });
 
+  // Envoi en arrière-plan : la cliente n'attend pas WhatsApp, et un échec n'annule rien
+  notifyNewReservation(created.id);
+
   res.status(201).json({
     reservation: created,
-    message: 'Votre réservation est enregistrée et en attente de validation par l\'institut.',
+    message: "Votre demande est bien reçue. Elle sera confirmée après l'appel de l'institut et la vérification de votre paiement.",
   });
 });
 

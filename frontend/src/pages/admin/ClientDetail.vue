@@ -33,7 +33,7 @@ const guard = (fn) => async () => { try { await fn(); } catch (e) { error.value 
         <div class="acts">
           <button class="icon-btn" aria-label="Voir" @click="guard(() => viewReceipt(r.id))()"><Eye :size="20" /></button>
           <button class="icon-btn" aria-label="Télécharger" @click="guard(() => downloadReceipt(r.id, r.numero))()"><Download :size="20" /></button>
-          <button class="icon-btn" aria-label="Partager" @click="guard(() => shareReceipt(r.id, r.numero))()"><Share2 :size="20" /></button>
+          <button class="icon-btn" aria-label="Partager" @click="guard(() => shareReceipt(r.id, r.numero, d.client))()"><Share2 :size="20" /></button>
         </div>
       </div></div>
   </template>

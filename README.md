@@ -88,6 +88,23 @@ Ne jamais lancer `seed:demo` sur la base de production.
 - L'icône « KMB Gestion » ouvre directement l'espace équipe ; l'icône « Keer Maam Birabar » installée depuis la page d'accueil ouvre le site public.
 - Le HTTPS est obligatoire (fourni par Vercel).
 
+## 2 ter. Notifications WhatsApp automatiques (réservations → WhatsApp de l'institut)
+À chaque demande de réservation en ligne, le serveur envoie un message à WhatsApp avec toutes les informations (nom, téléphone, e-mail, prestation, date, heure, montant). Un échec d'envoi n'annule jamais la réservation : l'état (envoyée / échec / non activée) s'affiche dans la fiche réservation, avec un bouton « Renvoyer ». Sans configuration, tout fonctionne sauf l'envoi WhatsApp.
+
+L'envoi automatique passe par l'**API officielle WhatsApp Business (Meta)**. Étapes (l'interface Meta évolue : suivre les intitulés) :
+1. Sur developers.facebook.com : créer une application de type « Business », ajouter le produit **WhatsApp**.
+2. Dans WhatsApp → « Démarrage » : noter le **Phone number ID** et générer un jeton d'accès. Pour la production, créer un **utilisateur système** (Business Manager) et un jeton permanent.
+3. Test : Meta fournit un numéro d'essai ; ajouter le WhatsApp de l'institut comme destinataire autorisé et valider le code reçu.
+4. Production : enregistrer un numéro dédié à l'API (un numéro déjà utilisé dans l'application WhatsApp classique ne peut pas servir tel quel) et vérifier l'entreprise.
+5. Créer un **modèle de message** (catégorie Utilitaire, langue Français, nom `nouvelle_reservation`) avec ce texte exact, puis attendre son approbation :
+   `Nouvelle demande de réservation n°{{1}}. Cliente : {{2}}. Téléphone : {{3}}. E-mail : {{4}}. Prestation : {{5}}. Date : {{6}}. Montant : {{7}}. Merci d'appeler la cliente pour confirmer et lui indiquer comment payer.`
+6. Variables d'environnement du backend (Render) : `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TEMPLATE_NAME=nouvelle_reservation`, `WHATSAPP_TEMPLATE_LANG=fr`.
+7. Admin → Réglages : renseigner le numéro WhatsApp de l'institut (avec indicatif), puis « Envoyer un message de test ».
+
+Sans modèle (`WHATSAPP_TEMPLATE_NAME` vide), un message texte libre est envoyé, mais WhatsApp ne l'accepte que dans les 24 h suivant un message de l'institut vers ce numéro : à réserver aux essais.
+
+Envoi du reçu à la cliente : Admin → Réservations → Reçu → « Envoyer à la cliente ». Sur téléphone, le PDF est joint à la feuille de partage (choisir WhatsApp). Sur ordinateur, le PDF est téléchargé et la conversation WhatsApp s'ouvre : joindre le fichier.
+
 ## 3. Premiers réglages (Admin → Réglages, propriétaire)
 Téléphone, WhatsApp (chiffres avec indicatif, ex. `221…`), adresse, horaires, réseaux, logo, couleurs, photos de galerie, texte « À propos », créneaux de réservation. Google Maps : sur Google Maps → Partager → Intégrer une carte → copier uniquement le lien `src="…"`.
 Images : Admin → Tarifs (ouvrir un service ou un pack → image), Admin → Réglages (photo de l'établissement et galerie). Sans image, un visuel élégant avec icône est affiché automatiquement. Les photos sont réduites automatiquement avant envoi.

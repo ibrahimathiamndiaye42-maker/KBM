@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { Clock, Facebook, Instagram, Lock, MapPin, Phone } from 'lucide-vue-next';
 import BrandLogo from '../../components/BrandLogo.vue';
 import BookingForm from '../../components/BookingForm.vue';
+import BookingSteps from '../../components/BookingSteps.vue';
 import Lightbox from '../../components/Lightbox.vue';
 import ServiceVisual from '../../components/ServiceVisual.vue';
 import { booking, site, waLink } from '../../composables/useConfig.js';
@@ -108,9 +109,12 @@ const lastWideMobile = computed(() => site.gallery.length > 1 && (site.gallery.l
       </div>
     </section>
 
-    <section id="reserver" class="sec narrow">
+    <section id="reserver" class="sec">
       <h2>Prendre rendez-vous</h2>
-      <BookingForm />
+      <div class="book">
+        <BookingSteps />
+        <BookingForm />
+      </div>
     </section>
 
     <section id="contact" class="band">
@@ -168,6 +172,7 @@ const lastWideMobile = computed(() => site.gallery.length > 1 && (site.gallery.l
 
 .sec { padding: 3.5rem 1.25rem; max-width: 1120px; margin: 0 auto; }
 .sec.narrow { max-width: 640px; }
+.book { display: grid; gap: 2rem; align-items: start; } @media (min-width: 900px) { .book { grid-template-columns: 1fr 1.05fr; gap: 3rem; } }
 .band { background: #F1EADB; }
 .sec h2 { font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 1.5rem; }
 

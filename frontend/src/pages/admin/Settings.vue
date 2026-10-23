@@ -6,6 +6,7 @@ import { compressImage } from '../../composables/format.js';
 import { loadSite, site } from '../../composables/useConfig.js';
 
 const s = reactive({}); const error = ref(''); const ok = ref(''); const busy = ref(false);
+const notif = ref(null);
 const pw = reactive({ current: '', next: '' }); const gallery = ref([]);
 
 const FIELDS = [
@@ -13,13 +14,14 @@ const FIELDS = [
   ['Contact', [['phone', 'Téléphone'], ['whatsapp', 'WhatsApp (avec indicatif, ex. 221…)', 'tel'], ['email', 'E-mail', 'email'], ['address', 'Adresse', 'textarea'],
     ['hours', 'Horaires (texte affiché sur le site)', 'textarea'], ['instagram', 'Instagram (lien https://)'], ['facebook', 'Facebook (lien https://)'], ['tiktok', 'TikTok (lien https://)']]],
   ['Localisation Google Maps', [['maps_embed_url', 'Lien « src » de la carte intégrée', 'textarea'], ['maps_link', 'Lien Google Maps (bouton « Ouvrir »)']]],
-  ['Réservation en ligne', [['open_time', 'Ouverture', 'time'], ['close_time', 'Fermeture', 'time'], ['slot_minutes', 'Durée d\'un créneau (minutes)', 'number'], ['max_per_slot', 'Réservations simultanées par créneau', 'number']]],
+  ['Réservation en ligne', [['payment_methods', 'Moyens de paiement acceptés (affichés aux clientes, ex. Wave, Orange Money, espèces)', 'textarea'], ['open_time', 'Ouverture', 'time'], ['close_time', 'Fermeture', 'time'], ['slot_minutes', 'Durée d\'un créneau (minutes)', 'number'], ['max_per_slot', 'Réservations simultanées par créneau', 'number']]],
   ['Couleurs', [['color_choco', 'Chocolat', 'color'], ['color_black', 'Noir', 'color'], ['color_cream', 'Crème', 'color'], ['color_gold', 'Doré', 'color'], ['color_sky', 'Bleu clair', 'color']]],
 ];
 
 async function load() {
   Object.assign(s, (await api('/admin/settings')).settings);
   gallery.value = (await api('/admin/gallery')).items;
+  notif.value = await api('/admin/notifications/status');
 }
 onMounted(() => load().catch((e) => { error.value = e.message; }));
 
@@ -43,6 +45,11 @@ const aboutPick = (f) => flash(async () => {
   await api('/admin/media/about', { method: 'PUT', body: await compressImage(f, 1400) }); await loadSite();
 }, 'Photo de l\'établissement mise à jour.');
 const aboutClear = () => flash(async () => { await api('/admin/media/about', { method: 'DELETE' }); await loadSite(); }, 'Photo retirée.');
+const testNotif = () => flash(async () => {
+  const r = await api('/admin/notifications/test', { method: 'POST' });
+  if (r.statut === 'ECHEC') throw new Error(r.erreur);
+  if (r.statut === 'NON_CONFIGUREE') throw new Error('Notifications non activées sur le serveur.');
+}, 'Message de test envoyé : vérifiez WhatsApp.');
 const changePw = () => flash(async () => {
   await api('/auth/change-password', { method: 'POST', body: { ...pw } }); pw.current = ''; pw.next = '';
 }, 'Mot de passe modifié.');
@@ -62,6 +69,14 @@ const changePw = () => flash(async () => {
     </section>
     <button class="btn block" :disabled="busy">Enregistrer les réglages</button>
   </form>
+
+  <section class="card" style="margin-top:1rem" v-if="notif">
+    <h2 style="font-size:1.2rem">Notifications WhatsApp</h2>
+    <p v-if="notif.configured" class="okmsg" style="margin-bottom:.75rem">Activées : chaque nouvelle réservation est envoyée sur le WhatsApp de l'institut{{ notif.destination ? ` (+${notif.destination})` : '' }}.</p>
+    <p v-else class="muted small">Non activées sur le serveur. Les réservations arrivent normalement dans l'application, mais aucun message WhatsApp n'est envoyé. Voir le guide de configuration (README).</p>
+    <p v-if="notif.configured && !notif.destination" class="err">Renseignez d'abord le numéro WhatsApp dans « Contact » ci-dessus.</p>
+    <button v-if="notif.configured" class="btn ghost" :disabled="busy" @click="testNotif">Envoyer un message de test</button>
+  </section>
 
   <section class="card" style="margin-top:1rem">
     <h2 style="font-size:1.2rem">Logo</h2>

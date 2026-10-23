@@ -7,6 +7,7 @@ import { requireAuth, requireOwner } from '../middleware/auth.js';
 import { SETTING_DEFS } from '../services/settings.js';
 import { resolveItem, upsertClient } from '../services/bookings.js';
 import { MEDIA_KEY, mediaUrls, withImages } from '../services/media.js';
+import { notifyNewReservation, sendTestNotification, whatsappConfigured, whatsappMode } from '../services/notify.js';
 import { loadReceipt, renderReceipt } from '../services/receiptPdf.js';
 import {
   PAYMENT_METHODS, PAYMENT_STATUSES, RESERVATION_STATUSES, amount, dateStr, imageUpload,
@@ -24,7 +25,9 @@ const RESERVATION_SELECT = `
          r.montant, r.statut, r.source, r.notes, r.created_at,
          p.id AS payment_id, p.statut AS paiement_statut, p.moyen AS paiement_moyen,
          p.montant AS paiement_montant, p.confirmed_at,
-         rc.id AS receipt_id, rc.numero AS receipt_numero
+         rc.id AS receipt_id, rc.numero AS receipt_numero,
+         (SELECT n.statut FROM notifications n WHERE n.reservation_id = r.id ORDER BY n.id DESC LIMIT 1) AS notif_statut,
+         (SELECT n.erreur FROM notifications n WHERE n.reservation_id = r.id ORDER BY n.id DESC LIMIT 1) AS notif_erreur
     FROM reservations r
     JOIN clients c ON c.id = r.client_id
     LEFT JOIN payments p ON p.reservation_id = r.id
@@ -205,6 +208,13 @@ router.put('/reservations/:id/payment', async (req, res) => {
   res.json({ reservation: rows[0] });
 });
 
+// Renvoyer la notification WhatsApp de l'institut pour une réservation
+router.post('/reservations/:id/notify', async (req, res) => {
+  const rid = id(req.params.id);
+  if (!(await query('SELECT 1 FROM reservations WHERE id = $1', [rid])).rowCount) throw new AppError(404, 'Réservation introuvable.');
+  res.json(await notifyNewReservation(rid));
+});
+
 /* ---------- Reçus ---------- */
 router.post('/reservations/:id/receipt', async (req, res) => {
   const rid = id(req.params.id);
@@ -335,6 +345,12 @@ router.put('/settings', requireOwner, async (req, res) => {
       await query('INSERT INTO settings(key, value) VALUES ($1,$2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value', [k, v]);
   res.json({ ok: true });
 });
+
+router.get('/notifications/status', requireOwner, async (_req, res) => {
+  const { getSettings } = await import('../services/settings.js');
+  res.json({ configured: whatsappConfigured(), mode: whatsappMode(), destination: (await getSettings()).whatsapp });
+});
+router.post('/notifications/test', requireOwner, async (_req, res) => res.json(await sendTestNotification()));
 
 router.put('/logo', requireOwner, async (req, res) => {
   const b = imageUpload.parse(req.body);

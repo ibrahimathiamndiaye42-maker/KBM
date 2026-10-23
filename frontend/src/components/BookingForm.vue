@@ -45,16 +45,22 @@ async function submit() {
 }
 
 const wa = computed(() => done.value && waLink(
-  `Bonjour, je viens de réserver ${done.value.item_label} le ${fdate(done.value.date)} à ${done.value.heure}. Nom : ${form.nom}.`));
+  `Bonjour, je viens d'envoyer une demande de réservation : ${done.value.item_label} le ${fdate(done.value.date)} à ${done.value.heure}. Nom : ${form.nom}.`));
 </script>
 
 <template>
   <div v-if="done" class="card done" role="status">
     <CheckCircle2 :size="40" color="var(--ok)" />
-    <h3>Réservation en attente de validation</h3>
+    <h3>Votre demande est bien reçue</h3>
+    <span class="badge EN_ATTENTE">En attente de confirmation</span>
     <p><strong>{{ done.item_label }}</strong><br />{{ fdate(done.date) }} à {{ done.heure }} — {{ money(done.montant) }}</p>
-    <p class="muted">L'institut vérifie votre demande et vous contactera pour la confirmer. Le règlement se fait en dehors du site ; il est vérifié manuellement par l'institut.</p>
-    <a v-if="wa" class="btn gold" :href="wa" target="_blank" rel="noopener">Prévenir l'institut sur WhatsApp</a>
+    <ol class="next">
+      <li>L'institut va vous <strong>appeler au {{ form.telephone }}</strong> pour vérifier vos informations et vous indiquer comment payer.</li>
+      <li>Une fois le paiement vérifié, votre réservation est <strong>validée définitivement</strong>.</li>
+      <li>Vous recevez alors votre <strong>reçu en PDF</strong> comme confirmation.</li>
+    </ol>
+    <p class="muted small">Ceci n'est pas encore une réservation confirmée. Gardez votre téléphone à portée de main.</p>
+    <a v-if="wa" class="btn ghost sm" :href="wa" target="_blank" rel="noopener">Écrire à l'institut sur WhatsApp</a>
   </div>
 
   <form v-else class="card" novalidate @submit.prevent="submit">
@@ -95,7 +101,8 @@ const wa = computed(() => done.value && waLink(
     </div>
     <div class="field"><label for="b-mail">E-mail <span class="muted">(facultatif)</span></label><input id="b-mail" v-model="form.email" type="email" autocomplete="email" /></div>
 
-    <button class="btn gold block" :disabled="sending">{{ sending ? 'Envoi…' : 'Envoyer la réservation' }}</button>
+    <button class="btn gold block" :disabled="sending">{{ sending ? 'Envoi…' : 'Envoyer ma demande de réservation' }}</button>
+    <p class="muted small" style="text-align:center;margin:.75rem 0 0">Aucun paiement n'est demandé maintenant : l'institut vous appellera.</p>
   </form>
 </template>
 
@@ -104,5 +111,6 @@ const wa = computed(() => done.value && waLink(
 .slots button { min-height: 46px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; font: 600 .95rem var(--sans); cursor: pointer; color: var(--ink); }
 .slots button.on { background: var(--choco); border-color: var(--choco); color: #fff; }
 .slots button:disabled { opacity: .4; text-decoration: line-through; cursor: not-allowed; }
+.next { text-align: left; margin: .25rem 0; padding-left: 1.2rem; display: grid; gap: .4rem; font-size: .95rem; }
 .done { text-align: center; display: grid; gap: .5rem; justify-items: center; padding: 1.75rem 1.25rem; }
 </style>
